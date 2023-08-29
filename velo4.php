@@ -164,9 +164,7 @@ $coord= $_POST["coord"];
 $valeurs = explode(',',$coord);
 $lat=$valeurs[0];
 $long=$valeurs[1];
-
 ?>
-
 
 <!DOCTYPE html>
 <html>
@@ -183,7 +181,6 @@ $long=$valeurs[1];
         #street-view {
             height: 100%;
         }
-
         #map {
             height: 100%;
         }
@@ -201,11 +198,8 @@ $long=$valeurs[1];
             height: 500px;
             border: 1px solid blue;
         }
-
-
-
-
     </style>
+
     <link rel="shortcut icon" href="#" />
     <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
@@ -236,8 +230,6 @@ nom du point: <input type ="text"  id="nomsave"><button onclick="save()">SAVE</b
       }, false);
     var file;
     var pano;
-    var url_string = window.location.href;
-    var url = new URL(url_string);
     var rot = 0;
     var long = 4.3983;
     var lat = 44.40821;
@@ -245,24 +237,22 @@ nom du point: <input type ="text"  id="nomsave"><button onclick="save()">SAVE</b
     var vreelle = 0.0;
     var dist;
     var p = 0;
-    var avance = false;
     var oldlat = 0.0, oldlong = 0.0;
     var oldelev = 0.0;
-    var reader;
     var deltah=0;
     var dur=0;
     var tabdur = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     var postab = 0;
-    var appelPente = 0;
     var inf = document.getElementById('draggable-infos');
     var el = document.getElementById('draggable-elevation');
     var carte = document.getElementById('draggable-map');
     var totdist = 0;
     var prem = true;
     var date = new Date();
-    var deniv = 0;
+    var deniv = 0
+    var moydur=0;
     var infosdep;
-    var nbrMesuresPente = 10;
+    var nbrMesuresPente = 5;
     var d = 0;
     var chgtok = false;
     var pegman_position;
@@ -273,17 +263,17 @@ nom du point: <input type ="text"  id="nomsave"><button onclick="save()">SAVE</b
     var filedata;
     var btgo = document.getElementById("gobt");
     var myService = null;
-    var speedCaracteric;
-    var slopeCaracteristic;
     var vitesse= document.getElementById("vitesse");
     var bt1 = document.getElementById("bt1");
     var myServiceDir = null;
     var dirCaracteric;
     var btgodir = document.getElementById("godir");
     var direction=0;
+    var vitesseCharacteristic;
+    var slopeCharacteristic;
 
     bt1.addEventListener('pointerup', function(event) {
-        speed().then(()=>pente());
+        connect();
     });
 
     btgodir.addEventListener('pointerup', function(event) {
@@ -323,7 +313,7 @@ nom du point: <input type ="text"  id="nomsave"><button onclick="save()">SAVE</b
                  case 3 : vreelle = parseFloat(vreelle) - 5;
                      if (vreelle < parseFloat(vit)) vreelle = parseFloat(vit);
              }
-            await timer(300);
+            await timer(100);
         } while (true);
     }
 
@@ -417,14 +407,14 @@ nom du point: <input type ="text"  id="nomsave"><button onclick="save()">SAVE</b
             document.getElementById("lat").value = lat;
             document.getElementById("long").value =long;
 
-            var elevator = new google.maps.ElevationService;
-            var R = 6371000.0;
-            var oldlatr = oldlat * Math.PI / 180;
-            var oldlongr = oldlong * Math.PI / 180;
-            var latr = lat * Math.PI / 180;
-            var longr = long * Math.PI / 180;
+          const elevator = new google.maps.ElevationService;
+          const R = 6371000.0;
+          const oldlatr = oldlat * Math.PI / 180;
+          const oldlongr = oldlong * Math.PI / 180;
+          const latr = lat * Math.PI / 180;
+          const longr = long * Math.PI / 180;
 
-            d = R * Math.acos(Math.cos(oldlatr) * Math.cos(latr) *
+          d = R * Math.acos(Math.cos(oldlatr) * Math.cos(latr) *
                 Math.cos(longr - oldlongr) + Math.sin(oldlatr) *
                 Math.sin(latr));
             if (prem === true)
@@ -456,16 +446,11 @@ nom du point: <input type ="text"  id="nomsave"><button onclick="save()">SAVE</b
                     if (deltah > 0 && deltah < 20) deniv += deltah;
                     const dh = Math.sqrt(d * d + deltah * deltah);
                     if (dh !== 0) p = deltah / dh * 100;
-                    //  $("#elevation").html(results[0].elevation + 'm '+d.toFixed(0)+" m "+p.toFixed(0)+"%");
-                    dur = p ; //dureté = pente pour tacx flux
-                    if (Math.abs(dur) < 20) {
-                        tabdur[postab] = dur;
+                    if (Math.abs(p) < 20) {
+                        let apente = tabdur[postab];
+                        tabdur[postab] = p;
+                        moydur=moydur-apente+p;
                         postab = (postab + 1) % nbrMesuresPente;
-                        var index = 0;
-                        var moydur = 0;
-                        for (index = 0; index < nbrMesuresPente; index++) {
-                            moydur += tabdur[index];
-                        }
                         dur = moydur / nbrMesuresPente;
                         dur = Math.round(dur*10)/10;
                        $("#draggable-elevation").html("<h1>&nbsp;" + dur + "&nbsp;</h1>");
@@ -486,10 +471,10 @@ nom du point: <input type ="text"  id="nomsave"><button onclick="save()">SAVE</b
     }
 
     function getCookie(cname) {
-        var name = cname + "=";
-        var decodedCookie = decodeURIComponent(document.cookie);
-        var ca = decodedCookie.split(';');
-        for (var i = 0; i < ca.length; i++) {
+      const name = cname + "=";
+      const decodedCookie = decodeURIComponent(document.cookie);
+      const ca = decodedCookie.split(';');
+      for (var i = 0; i < ca.length; i++) {
             var c = ca[i];
             while (c.charAt(0) == ' ') {
                 c = c.substring(1);
@@ -511,18 +496,14 @@ nom du point: <input type ="text"  id="nomsave"><button onclick="save()">SAVE</b
    */
 
     function reset() {
-
         lat = getCookie(nomreset.value+"latitude");
-        if (isNaN(lat))
-            lat = 0;
+        if (isNaN(lat))  lat = 0;
         long = getCookie(nomreset.value+"longitude");
-        if (isNaN(long))
-            long = 0;
+        if (isNaN(long)) long = 0;
         infosdep = document.getElementById("infosdep");
         infosdep.setAttribute("value", lat + "," + long);
         document.getElementById("lat").value=lat;
         document.getElementById("long").value=long;
-
     }
 
     function save() {
@@ -642,95 +623,57 @@ nom du point: <input type ="text"  id="nomsave"><button onclick="save()">SAVE</b
                 unit: 's'       }
         };
 
-
-         async function connect(){
-            if(myService === null) {
-                // Vérifier la compatibilité avec le Bluetooth
-                if ('bluetooth' in navigator) {
-                    navigator.bluetooth.requestDevice({filters: [{services: ['00001826-0000-1000-8000-00805f9b34fb']}]})
-                        .then(device => {
-                            // Connexion à l'appareil Bluetooth sélectionné
-                            return device.gatt.connect();
-                        })
-                        .then(server => {
-                            myService = server.getPrimaryService('00001826-0000-1000-8000-00805f9b34fb');
-                            // Récupération du service GATT
-
-                            return myService;
-                        })
-                        .catch(error => {
-                            console.error('Erreur :', error);
-                        });
-                } else {
-                    console.log('Le Bluetooth n\'est pas supporté par ce navigateur.');
-                }
-            }
-            else return myService;
-        }
-
-        async function speed(){
-
-        connect()
-        .then(service => {
-                // Activation des notifications pour la caractéristique souhaitée
-                return service.getCharacteristic('00002ad2-0000-1000-8000-00805f9b34fb');
-            })
-                .then(characteristic => {
-                    // Activation des notifications
-                    alert("récupération de la caractéristique vitesse et activation des notifications");
-                    return characteristic.startNotifications();
-                })
-                .then(characteristic => {
-                    // Écoute des changements de valeur de la caractéristique
-
-                    characteristic.addEventListener('characteristicvaluechanged', event => {
-                        // Lecture de la valeur mise à jour
-                        let value = event.target.value;
-                        // Faites quelque chose avec la valeur...
-                        console.log('Nouvelle valeur :', value);
-                        vit= readSpeed(new DataView(value.buffer));
-                        console.log('vitesse = '+vit);
-
-                        /*  let speed = new DataView(value.buffer).getUint32(0, true) / 100; // Supposons que la valeur soit un entier non signé de 32 bits en décimales
-                          console.log('Vitesse :', speed, 'km/h');*/
-                    });
-                })
-                .catch(error => {
-                    console.error('Erreur :', error);
+        async function connect() {
+          if ('bluetooth' in navigator) {
+            navigator.bluetooth.requestDevice({filters: [{services: ['00001826-0000-1000-8000-00805f9b34fb']}]})
+              .then(device => {
+                   return device.gatt.connect();
+              })
+              .then(server => {
+                myService = server.getPrimaryService('00001826-0000-1000-8000-00805f9b34fb');
+                return myService;
+              })
+              .then(service => {
+                vitesseCharacteristic = service.getCharacteristic('00002ad2-0000-1000-8000-00805f9b34fb');
+                alert("récupération de la caractéristique vitesse ");
+                return vitesseCharacteristic;
+              })
+              .then(characteristic  => {
+               return  characteristic.startNotifications();
+              })
+              .then(characteristic => {
+                   characteristic.addEventListener('characteristicvaluechanged', event => {
+                  let value = event.target.value;
+                  vit = readSpeed(new DataView(value.buffer));
+               });
+                  return myService;
+              })
+              .then(service => {
+                  return service.getCharacteristic('00002ad9-0000-1000-8000-00805f9b34fb');
+              })
+              .then(characteristic=> {
+                slopeCharacteristic =characteristic;
+                alert("caractéristique pente définie");
+                return characteristic.startNotifications();
+              })
+              .then(characteristic => {
+                      characteristic.addEventListener('characteristicvaluechanged', event => {
+                      let value = event.target.value;
                 });
+                return characteristic;
+              })
+              .then(characteristic => {
+                let data = RequestControl();
+                characteristic.writeValueWithResponse(data);
+                console.log("request control exécuté");
+              })
+              .catch(error => {
+                console.error('Erreur :', error);
+              });
+          }
         }
 
-        function pente(){
-            connect().then(service => {
-                // Récupération de la caractéristique de pente
-                return service.getCharacteristic('00002ad9-0000-1000-8000-00805f9b34fb');
-            })
-                .then(characteristic => {
-                    slopeCaracteristic = characteristic;
-                    alert("caractéristique pente définie");
-                    return characteristic.startNotifications();
-                })
-                .then(characteristic => {
-                    // Écoute des changements de valeur de la caractéristique
-                    characteristic.addEventListener('characteristicvaluechanged', event => {
-                        // Lecture de la valeur mise à jour
-                        let value = event.target.value;
-                        // Faites quelque chose avec la valeur...
-                        console.log('Nouvelle valeur :', value);
-                    });
-                    return characteristic;
-                })
-                .then(characteristic => {
-                    let data = RequestControl();
-                    characteristic.writeValueWithResponse(data);
-                    console.log("request contol exécuté");
-                })
-                .catch(error => {
-                    console.error('Erreur :', error);
-                });
-        }
-        function encode(grade) {
-
+      function encode(grade) {
             const buffer = new ArrayBuffer(7);
             const view   = new DataView(buffer);
             view.setUint8(0, opCode, true);
@@ -742,19 +685,12 @@ nom du point: <input type ="text"  id="nomsave"><button onclick="save()">SAVE</b
         }
 
         async function setPente() {
-
                 let slopeValue = dur;
                 let data = encode(Math.floor(slopeValue*100));
                 var view1 = new DataView(data);
-
-              console.log('appel de writeValueWithResponse avec pour valeur : '+view1);
-
-                return slopeCaracteristic.writeValueWithResponse(data);
-
+                console.log('appel de writeValueWithResponse avec pour valeur : '+view1);
+                return  slopeCharacteristic.writeValueWithResponse(data);
         }
-
-
-
         function readSpeed(dataview) {
             const flags = dataview.getUint16(0, true);
             const speed = dataview.getUint16(speedIndex(flags), true);
