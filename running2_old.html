@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="utf-8"></meta>
+        <title>Street View</title>
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            #street-view {
+                height: 100%;
+            }
+
+            #map {
+                height: 100%;
+            }
+
+            #draggable-map { width: 500px; height: 500px; }
+            #draggable-infos{ width: 10%; height: 15%; }
+            #draggable-elevation { width: 5%; height: 10%; }
+
+            .circleBase {
+                border-radius: 50%;
+            }
+
+            .type1 {
+                width: 500px;
+                height: 500px;
+                border: 1px solid blue;
+            }
+
+
+
+
+        </style>
+        <link rel="shortcut icon" href="#" />
+        <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+        <script>
+            $(function () {
+                $("#draggable-map").draggable();
+                $("#draggable-infos").draggable();
+                $("#draggable-elevation").draggable();
+            });
+        </script>
+    </head>
+    <body>
+
+        <div id="draggable-map" class="circleBase type1 ui-widget-content"></div>
+        <div>
+
+            Infos = <input type="text" id="infosdep" th:value="${infos}"><br>
+            Fichier KML = <input type="text" id="nomfic" th:value="${nomfic}"><br>
+            Latitude = <input type="text" id="lat" th:value="${lat}"> Longitude = <input type = "text" id="long" th:value="${long}"><br>
+            coefficient attente =<input type="text" id="coeffatt" value="1"> mode marche  <input type="checkbox" id="marche" ><br>
+            <input type ="button" id="test" value="test"> <input type ="text" id="sens" value="     ">
+        </div>
+
+        <div id="draggable-elevation"></div>
+        <button onclick="go()">GO</button>
+        <button onclick="reset()">RESET</button>
+        <div id="draggable-infos" class="ui-widget-content"></div>
+        <div id="street-view"></div>
+
+
+        <script>
+
+            document.addEventListener('DOMContentLoaded', function () {
+                //  setPosition();
+               // lecture();
+            }, false);
+            var pano;
+            var url_string = window.location.href;
+            var url = new URL(url_string);
+            var rot = 0;
+            var long = 4.3983;
+            var lat = 44.40821;
+            //var long = 4.5;
+            //var lat =50;
+            var vit = 0.0;
+            var vreelle = 0.0;
+            var dist;
+            var droite;
+            var gauche;
+            var p = 0;
+
+
+            var avance = false;
+            var oldlat = 0.0, oldlong = 0.0;
+            var oldelev = 0.0;
+
+
+
+            var reader;
+            var datas;
+            var deltah;
+            var dur;
+            var tabdur = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            var postab = 0;
+            var adur;
+            var audio = new Audio('673.wav');
+            var appelPente = 0;
+            var inf = document.getElementById('draggable-infos');
+            var el = document.getElementById('draggable-elevation');
+            var carte = document.getElementById('draggable-map');
+            var totdist = 0;
+            var prem = true;
+            var coeffatt = 1;
+            var date = new Date();
+            var deniv = 0;
+            var infosdep;
+            var marche = true;
+            var nbrMesuresPente = 10;
+            var d = 0;
+            var chgtok = false;
+            var pegman_position;
+            var ctaLayer;
+            var map;
+            var nomfic = document.getElementById("nomfic").value;
+            var src = "https://googlebike.herokuapp.com/" + nomfic;
+
+           var speechResult="";
+           var sens = document.getElementById("sens");
+           var finspeech=true;
+           var arret=true;
+           
+            function rotation() {
+
+                var div = document.getElementById('draggable-map');
+                var deg = (-rot) % 360;
+
+                div.style.webkitTransform = 'rotate(' + deg + 'deg)';
+                div.style.mozTransform = 'rotate(' + deg + 'deg)';
+                div.style.msTransform = 'rotate(' + deg + 'deg)';
+                div.style.oTransform = 'rotate(' + deg + 'deg)';
+                div.style.transform = 'rotate(' + deg + 'deg)';
+            }
+
+
+            function timer(ms) {
+                return new Promise(res => setTimeout(res, ms));
+            }
+
+
+            async  function lecture() {
+                do {
+                    $.ajax({
+                        type: "GET",
+                        contentType: "application/json",
+                        url: "https://googlebike.herokuapp.com/bikerest/getInfos",
+                        dataType: 'json',
+                        timeout: 100000,
+                        success: function (data) {
+                            datas = data;
+                            console.log("SUCCESS: ", data);
+                            traitement();
+                        },
+                        error: function (e) {
+                            alert("aucune infos trouvée");
+
+                        },
+                        done: function (e) {
+                            console.log("DONE");
+                        }
+                    });
+                    await timer(100);
+                   } while (true);
+            }
+
+         async   function traitement() {
+
+         
+        do{
+               
+                if(finspeech===true){
+                     testSpeech();
+                  
+                }
+                if(speechResult==='gauche') gauche ='true';
+                if(speechResult==='droite') droite='true';
+                if(speechResult==='fin') {
+                    gauche='false';
+                    droite='false';
+                }
+                if(speechResult==='arrêter') arret=true;
+                if(speechResult==='démarrer') arret=false;
+                if(arret===true)vit=0;
+                if(speechResult==='plus'){
+                    vit = parseFloat(vit)+1;
+                    speechResult="";
+                }
+                 if(speechResult==='moins'){
+                    vit = parseFloat(vit)-1;
+                    speechResult="";
+                }
+                
+                $("#draggable-infos").html("<h2>vitesse = " + parseFloat(vreelle).toFixed(0) + " km/h<br>distance = " + totdist.toFixed(0) + " m<br>deniv = " + deniv.toFixed(0) + "m</h2>");
+                if (gauche === 'true') rot -= 2;
+                if (droite === 'true') rot += 2;
+                rotate();
+                await timer(100);
+            }while(true);
+
+            }
+
+
+
+            async   function initialize() {
+
+
+                lat = parseFloat(document.getElementById("lat").value);
+
+                long = parseFloat(document.getElementById("long").value);
+                pegman_position = {lat: lat, lng: long};
+                console.log("latitude = " + lat);
+                map = new google.maps.Map(document.getElementById('draggable-map'), {
+                    center: pegman_position,
+                    zoom: 15});
+
+                ctaLayer = new google.maps.KmlLayer(null);
+                ctaLayer.setMap(null);
+
+                ctaLayer = new google.maps.KmlLayer(src, {
+                    suppressInfoWindows: true,
+                    preserveViewport: false,
+                    map: map
+                });
+
+                /*  ctaLayer = new google.maps.KmlLayer({
+                 map: map,
+                 url: 'https://googlebike.herokuapp.com/bikerest/download/mykml.kml'
+                 })¨*/
+
+
+                pano = new google.maps.StreetViewPanorama(
+                        document.getElementById('street-view'),
+                        {
+                            position: pegman_position,
+                            pov: {heading: rot, pitch: 0},
+                            zoom: 1
+                        });
+                pano.addListener('links_changed', function () {
+                    chgtok = true;
+                    map.setCenter(pegman_position);
+
+                });
+
+
+                map.setStreetView(pano);
+            }
+
+            function rotate() {
+                rotation();
+                pano.setPov({
+                    heading: rot,
+                    pitch: 0,
+
+                });
+            }
+
+
+
+
+            function difference(link) {
+
+                var diff = Math.abs(pano.pov.heading % 360 - link.heading);
+                if (diff > 180)
+                    diff = Math.abs(360 - diff);
+                return diff;
+            }
+            async  function moveForward() {
+                var curr;
+                if (parseFloat(vreelle) === 0.0)
+                    return;
+
+                for (i = 0; i < pano.getLinks().length; i++) {
+
+                    var differ = difference(pano.links[i]);
+                    if (curr === undefined) {
+                        curr = pano.links[i];
+                    }
+
+                    if (difference(curr) > difference(pano.links[i])) {
+                        curr = pano.links[i];
+                    }
+                }
+
+                pano.setPano(curr.pano);
+
+                try {
+                    while (chgtok === false) {
+                        await timer(100);
+                    }
+                    chgtok = false;
+                    lat = pano.getPosition().lat();
+                    long = pano.getPosition().lng();
+                    pegman_position = {lat: lat, lng: long};
+
+                    document.cookie = "latitude=" + lat + "; Max-Age=2592000";
+                    document.cookie = "longitude=" + long + "; Max-Age=2592000";
+
+
+                    var elevator = new google.maps.ElevationService;
+                    var R = 6371000.0;
+                    var oldlatr = oldlat * Math.PI / 180;
+                    var oldlongr = oldlong * Math.PI / 180;
+                    var latr = lat * Math.PI / 180;
+                    var longr = long * Math.PI / 180;
+
+                    d = R * Math.acos(Math.cos(oldlatr) * Math.cos(latr) *
+                            Math.cos(longr - oldlongr) + Math.sin(oldlatr) *
+                            Math.sin(latr));
+                    if (prem === true)
+                        d = 10;
+                    if (isNaN(d))
+                        d = 10;
+                    totdist = parseFloat(totdist) + parseFloat(d);
+                    prem = false;
+                    oldlat = lat;
+                    oldlong = long;
+                    myDisplayLocationElevation(pano.getPosition(), elevator, d);
+                } catch (err) {
+                }
+            }
+
+            function myDisplayLocationElevation(location, elevator, d) {
+                // Initiate the location request
+                elevator.getElevationForLocations({
+                    'locations': [location]
+                }, function (results, status) {
+                    if (status === 'OK') {
+                        // Retrieve the first result
+                        if (results[0]) {
+                            // Open the infowindow indicating the elevation at the clicked position.
+                            deltah = results[0].elevation - oldelev;
+                            oldelev = results[0].elevation;
+
+                            if (deltah > 0 && deltah < 20)
+                                deniv += deltah;
+                            var dh = Math.sqrt(d * d + deltah * deltah);
+                            if (dh !== 0)
+                                p = deltah / dh * 100;
+                            //  $("#elevation").html(results[0].elevation + 'm '+d.toFixed(0)+" m "+p.toFixed(0)+"%");
+                            dur = p / 2;
+
+                            if (Math.abs(dur) < 20) {
+                                tabdur[postab] = dur;
+                                postab = (postab + 1) % nbrMesuresPente;
+                                var index = 0;
+                                var moydur = 0;
+                                for (index = 0; index < nbrMesuresPente; index++) {
+                                    moydur += tabdur[index];
+                                }
+                                dur = moydur / nbrMesuresPente;
+                                dur = Math.round(dur);
+                                if (Math.abs(dur) < 1)
+                                    dur = 1;
+                                if (dur >= 1 && dur !== adur && document.getElementById("marche").checked === false) {
+
+                                    audio.play();
+
+                                }
+
+                                //  $("#elevation").html(deltah.toFixed(1) + 'm ' + d.toFixed(0) + " m dureté = " + dur);
+                                $("#draggable-elevation").html("<h1>&nbsp;&nbsp;&nbsp;&nbsp;" + dur + "&nbsp;&nbsp;&nbsp;&nbsp;</h1>");
+                                if (dur < 0)
+                                    el.style.backgroundColor = "GREEN";
+                                else
+                                    el.style.backgroundColor = "RED";
+                                adur = dur;
+                            }
+                        } else {
+                            alert('No results found');
+                        }
+                    } else {
+                        alert('Elevation service failed due to: ' + status);
+                    }
+                });
+            }
+
+            function getCookie(cname) {
+                var name = cname + "=";
+                var decodedCookie = decodeURIComponent(document.cookie);
+                var ca = decodedCookie.split(';');
+                for (var i = 0; i < ca.length; i++) {
+                    var c = ca[i];
+                    while (c.charAt(0) == ' ') {
+                        c = c.substring(1);
+                    }
+                    if (c.indexOf(name) == 0) {
+                        return c.substring(name.length, c.length);
+                    }
+                }
+                return "";
+            }
+
+
+            function reset() {
+                lat = getCookie("latitude");
+                if (isNaN(lat))
+                    lat = 0;
+                long = getCookie("longitude");
+                if (isNaN(long))
+                    long = 0;
+                infosdep = document.getElementById("infosdep");
+                infosdep.setAttribute("value", lat + "," + long);
+            }
+
+            async function go() {
+
+                date.setTime(date.getTime() + (100 * 24 * 60 * 60 * 1000));
+                lat = parseFloat(document.getElementById("lat").value);
+                long = parseFloat(document.getElementById("long").value);
+
+                initialize();
+                //debut positionnement 
+
+                inf.style.position = "absolute";
+                inf.style.left = '800px';
+                inf.style.top = '500px';
+                inf.style.backgroundColor = "BLUE";
+                inf.style.zIndex = "10";
+
+
+                el.style.position = "absolute";
+                el.style.left = '1000px';
+                el.style.top = '500px';
+                el.style.backgroundColor = "GREEN";
+                el.style.zIndex = "10";
+
+                carte.style.position = "absolute";
+                carte.style.left = '1000px';
+                carte.style.top = '800px';
+                carte.style.zIndex = "10";
+
+                //fin positionnement  
+                traitement();
+                do {
+                    try {
+                        var tattente = 0.0;
+                        coeffatt = parseFloat(document.getElementById("coeffatt").value);
+                        avancer();
+                        if (parseFloat(vreelle) > 0.1) {
+                            tattente = (d * 3600) / (parseFloat(vreelle)) * coeffatt;
+                            moveForward();
+                             
+                            await timer(tattente);
+                        } else
+                           
+                            await timer(1000);
+                    } catch (err) {
+                        alert(err);
+                    }
+                   
+                   
+                } while (true);
+            }
+
+
+            function avancer() {
+                if (document.getElementById("marche").checked === true) {
+                    vreelle = parseFloat(vit);
+                    return;
+                }
+                ;
+                vreelle = Math.sqrt(parseFloat(vreelle) / 3.6 * parseFloat(vreelle) / 3.6 - 20 * deltah) * 3.6 - parseFloat(vreelle) * 0.20;
+                //cette formule tient compte du frottement proportionnel à la vitesse
+                if (isNaN(vreelle))
+                    vreelle = vit;
+                if (vreelle > 30)
+                    vreelle = 30;
+                if (vreelle < parseFloat(vit))
+                    vreelle = parseFloat(vit);//on ne peut pas descendre sous la vitesse réelle
+            }
+
+
+            function getCookie(name) {
+                var value = "; " + document.cookie;
+                var parts = value.split("; " + name + "=");
+                if (parts.length === 2)
+                    return parts.pop().split(";").shift();
+                else
+                    return "";
+            }
+
+            var SpeechRecognition = SpeechRecognition || webkitSpeechRecognition;
+            var SpeechGrammarList = SpeechGrammarList || webkitSpeechGrammarList;
+            var SpeechRecognitionEvent = SpeechRecognitionEvent || webkitSpeechRecognitionEvent;
+            var testBtn = document.getElementById("test");
+
+            function randomPhrase() {
+                var number = Math.floor(Math.random() * phrases.length);
+                return number;
+            }
+
+          async  function testSpeech() {
+                finspeech=false;
+                console.log("début speech");
+                                
+                var colors = [ 'gauche' , 'droite' , 'fin', 'plus', 'moins','arrêter','démarrer'];
+                var grammar = '#JSGF V1.0; grammar colors; public <colors> = ' + colors.join(' | ') + ' ;'
+                var recognition = new SpeechRecognition();
+                var speechRecognitionList = new SpeechGrammarList();
+                speechRecognitionList.addFromString(grammar, 1);
+                recognition.grammars = speechRecognitionList;
+                //recognition.lang = 'en-US';
+                recognition.lang = 'fr';
+                recognition.interimResults = false;
+                recognition.maxAlternatives = 1;
+
+                recognition.start();
+
+                recognition.onresult = function (event) {
+                    // The SpeechRecognitionEvent results property returns a SpeechRecognitionResultList object
+                    // The SpeechRecognitionResultList object contains SpeechRecognitionResult objects.
+                    // It has a getter so it can be accessed like an array
+                    // The first [0] returns the SpeechRecognitionResult at position 0.
+                    // Each SpeechRecognitionResult object contains SpeechRecognitionAlternative objects that contain individual results.
+                    // These also have getters so they can be accessed like arrays.
+                    // The second [0] returns the SpeechRecognitionAlternative at position 0.
+                    // We then return the transcript property of the SpeechRecognitionAlternative object 
+                    speechResult = event.results[0][0].transcript.toLowerCase();
+                    sens.value=speechResult;
+                    console.log('Confidence: ' + event.results[0][0].confidence);
+                    finspeech=true;
+                }
+
+                recognition.onspeechend = function () {
+                    recognition.stop();
+                    testBtn.disabled = false;
+                    testBtn.textContent = 'Start new test';
+                    finspeech=true;
+                }
+
+                recognition.onerror = function (event) {
+                    testBtn.disabled = false;
+                    testBtn.textContent = 'Start new test';
+                    sens.value = 'Error occurred in recognition: ' + event.error;
+                    finspeech=true;
+                }
+
+                recognition.onaudiostart = function (event) {
+                    //Fired when the user agent has started to capture audio.
+                    console.log('SpeechRecognition.onaudiostart');
+                }
+
+                recognition.onaudioend = function (event) {
+                    //Fired when the user agent has finished capturing audio.
+                    console.log('SpeechRecognition.onaudioend');
+                    finspeech=true;
+                }
+
+                recognition.onend = function (event) {
+                    //Fired when the speech recognition service has disconnected.
+                    console.log('SpeechRecognition.onend');
+                    finspeech=true;
+                }
+
+                recognition.onnomatch = function (event) {
+                    //Fired when the speech recognition service returns a final result with no significant recognition. This may involve some degree of recognition, which doesn't meet or exceed the confidence threshold.
+                    sens.value='pas compris';
+                    speechResult="rien";
+                    finspeech=true;
+                }
+
+                recognition.onsoundstart = function (event) {
+                    //Fired when any sound — recognisable speech or not — has been detected.
+                    console.log('SpeechRecognition.onsoundstart');
+                }
+
+                recognition.onsoundend = function (event) {
+                    //Fired when any sound — recognisable speech or not — has stopped being detected.
+                    console.log('SpeechRecognition.onsoundend');
+                    finspeech=true;
+                }
+
+                recognition.onspeechstart = function (event) {
+                    //Fired when sound that is recognised by the speech recognition service as speech has been detected.
+                    console.log('SpeechRecognition.onspeechstart');
+                }
+                recognition.onstart = function (event) {
+                    //Fired when the speech recognition service has begun listening to incoming audio with intent to recognize grammars associated with the current SpeechRecognition.
+                    console.log('SpeechRecognition.onstart');
+                }
+            }
+             
+            testBtn.addEventListener('click', testSpeech);
+
+
+
+        </script>
+
+        <script async defer
+                src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDUH5mkam4F4riIN8lTjGQCtRcmCSblMF8&callback=initialize">
+
+        </script>
+
+    </body>
+</html>

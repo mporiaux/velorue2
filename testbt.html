@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<button id="bt1">Connect</button><br>
+
+PENTE : <input type = "text" id = "pente"><br>
+<button id="bt2">Set Pente</button><br>
+
+VITESSE = <span id="vitesse"></span><br>
+
+
+
+</body>
+<script>
+    const definitions = {
+        windSpeed:      {resolution: 0.001,  unit: 'mps',  size: 2, min: -35.56, max: 35.56,  default: 2}, // 0,
+        grade:          {resolution: 0.01,   unit: '%',    size: 2, min: -40,    max: 40,     default: 0},
+        crr:            {resolution: 0.0001, unit: '',     size: 1, min: 0,      max: 0.0254, default: 0.004},
+        windResistance: {resolution: 0.01,   unit: 'kg/m', size: 1, min: 0,      max: 1.86,   default: 0.51},
+    };
+    const opCode = 0x11;
+
+    const flags = {
+        InstantaneousSpeed:    { flagBit:  0, present: 0 },
+        MoreData:              { flagBit:  0, present: 0 },
+        InstantaneousCandence: { flagBit:  2, present: 1 }, // bit 1, present 0
+        AverageSpeed:          { flagBit:  1, present: 1 }, // bit 2, present 1
+        AverageCandence:       { flagBit:  3, present: 1 },
+        TotalDistance:         { flagBit:  4, present: 1 },
+        ResistanceLevel:       { flagBit:  5, present: 1 },
+        InstantaneousPower:    { flagBit:  6, present: 1 },
+        AveragePower:          { flagBit:  7, present: 1 },
+        ExpendedEnergy:        { flagBit:  8, present: 1 },
+        HeartRate:             { flagBit:  9, present: 1 },
+        MetabolicEquivalent:   { flagBit: 10, present: 1 },
+        ElapsedTime:           { flagBit: 11, present: 1 },
+        RemainingTime:         { flagBit: 12, present: 1 }
+        // Reserved:              { flagBit: 13-15, present: null }
+    };
+    const fields = {
+        Flags:                 { type: 'Uint16', size: 2, resolution: 1,
+            unit: 'bit'     },
+        InstantaneousSpeed:    { type: 'Uint16', size: 2, resolution: 0.01,
+            unit: 'kph'     },
+        AverageSpeed:          { type: 'Uint16', size: 2, resolution: 0.01,
+            unit: 'kph'     },
+        InstantaneousCandence: { type: 'Uint16', size: 2, resolution: 0.5,
+            unit: 'rpm'     },
+        AverageCandence:       { type: 'Uint16', size: 2, resolution: 0.5,
+            unit: 'rpm'     },
+        TotalDistance:         { type: 'Uint24', size: 3, resolution: 1,
+            unit: 'm'       },
+        ResistanceLevel:       { type: 'Uint16', size: 2, resolution: 1,
+            unit: 'unitless'},
+        InstantaneousPower:    { type: 'Uint16', size: 2, resolution: 1,
+            unit: 'W'       },
+        AveragePower:          { type: 'Uint16', size: 2, resolution: 1,
+            unit: 'W'       },
+        TotalEnergy:           { type: 'Int16',  size: 2, resolution: 1,
+            unit: 'kcal'    },
+        EnergyPerHour:         { type: 'Int16',  size: 2, resolution: 1, unit: 'kcal'    },
+        EnergyPerMinute:       { type: 'Uint8',  size: 1, resolution: 1,
+            unit: 'kcal'    },
+        HeartRate:             { type: 'Uint16', size: 2, resolution: 1,
+            unit: 'bpm'     },
+        MetabolicEquivalent:   { type: 'Uint8',  size: 1, resolution: 1,
+            unit: 'me'      },
+        ElapsedTime:           { type: 'Uint16', size: 2, resolution: 1,
+            unit: 's'       },
+        RemainingTime:         { type: 'Uint16', size: 2, resolution: 1,
+            unit: 's'       }
+    };
+
+
+    var myService = null;
+    var speedCaracteric;
+    var slopeCaracteristic;
+    var vitesse= document.getElementById("vitesse");
+
+    var bt1 = document.getElementById("bt1");
+
+    bt1.addEventListener('pointerup', function(event) {
+        speed().then(()=>pente());
+    });
+
+    var bt2 = document.getElementById("bt2");
+    bt2.addEventListener('pointerup', function(event) {
+        setPente()
+            .then(()=>console.log("pente définie"))
+            .catch(error => {
+                console.error('Erreur :', error);
+            });
+    });
+
+
+
+
+
+    async function connect(){
+        if(myService === null) {
+            // Vérifier la compatibilité avec le Bluetooth
+            if ('bluetooth' in navigator) {
+                navigator.bluetooth.requestDevice({filters: [{services: ['00001826-0000-1000-8000-00805f9b34fb']}]})
+                    .then(device => {
+                        // Connexion à l'appareil Bluetooth sélectionné
+                        return device.gatt.connect();
+                    })
+                    .then(server => {
+                        myService = server.getPrimaryService('00001826-0000-1000-8000-00805f9b34fb');
+                        // Récupération du service GATT
+
+                        return myService;
+                    })
+                    .catch(error => {
+                        console.error('Erreur :', error);
+                    });
+            } else {
+                console.log('Le Bluetooth n\'est pas supporté par ce navigateur.');
+            }
+        }
+        else return myService;
+    }
+
+    async function speed(){
+
+    connect()
+    .then(service => {
+            // Activation des notifications pour la caractéristique souhaitée
+            return service.getCharacteristic('00002ad2-0000-1000-8000-00805f9b34fb');
+        })
+            .then(characteristic => {
+                // Activation des notifications
+                return characteristic.startNotifications();
+            })
+            .then(characteristic => {
+                // Écoute des changements de valeur de la caractéristique
+                characteristic.addEventListener('characteristicvaluechanged', event => {
+                    // Lecture de la valeur mise à jour
+                    let value = event.target.value;
+                    // Faites quelque chose avec la valeur...
+                    console.log('Nouvelle valeur :', value);
+                    let speed= readSpeed(new DataView(value.buffer));
+                    console.log('vitesse = '+speed);
+                    vitesse.innerHTML= speed;
+                    /*  let speed = new DataView(value.buffer).getUint32(0, true) / 100; // Supposons que la valeur soit un entier non signé de 32 bits en décimales
+                      console.log('Vitesse :', speed, 'km/h');*/
+                });
+            })
+            .catch(error => {
+                console.error('Erreur :', error);
+            });
+    }
+
+    function pente(){
+
+
+        connect().then(service => {
+            // Récupération de la caractéristique de pente
+            return service.getCharacteristic('00002ad9-0000-1000-8000-00805f9b34fb');
+        })
+            .then(characteristic => {
+                slopeCaracteristic = characteristic;
+                alert("caractéristique définie");
+                return characteristic.startNotifications();
+            })
+            .then(characteristic => {
+                // Écoute des changements de valeur de la caractéristique
+                characteristic.addEventListener('characteristicvaluechanged', event => {
+                    // Lecture de la valeur mise à jour
+                    let value = event.target.value;
+                    // Faites quelque chose avec la valeur...
+                    console.log('Nouvelle valeur :', value);
+                });
+                return characteristic;
+            })
+            .then(characteristic => {
+                let data = RequestControl();
+                characteristic.writeValueWithResponse(data);
+                console.log("request contol exécuté");
+            })
+            .catch(error => {
+                console.error('Erreur :', error);
+            });
+    }
+    function encode(grade) {
+
+
+        const buffer = new ArrayBuffer(7);
+        const view   = new DataView(buffer);
+        view.setUint8(0, opCode, true);
+        view.setInt16(1, 2000, true);
+        view.setInt16(3, grade, true);
+        view.setUint8(5, 40, true);
+        view.setUint8(6, 51, true);
+
+
+        console.log(`:tx :ftms :simulation grade `+grade);
+        return view.buffer;
+    }
+
+    async function setPente() {
+
+
+            let slopeValue = document.getElementById("pente").value;// La valeur de la pente que vous souhaitez définir
+            let data = encode(Math.floor(slopeValue*100));
+
+            console.log("longueur du buffer = "+ data.byteLength);
+            let lg = data.byteLength;
+            var view1 = new DataView(data);
+
+            console.log('appel de writeValueWithResponse avec pour valeur : '+view1);
+            for(let i=0;i<lg;i++){
+                console.log(i+":"+view1.getInt8(i));
+            }
+
+            return slopeCaracteristic.writeValueWithResponse(data);
+
+    }
+
+
+
+    function readSpeed(dataview) {
+        const flags = dataview.getUint16(0, true);
+        const speed = dataview.getUint16(speedIndex(flags), true);
+        return (speed * fields.InstantaneousSpeed.resolution);
+    }
+
+    function speedIndex(flags) {
+        let i = fields.Flags.size;
+        return i;
+    }
+
+    function RequestControl() {
+        const opCode = 0x00;
+        const length = 1;
+        const buffer = new ArrayBuffer(length);
+        const view   = new DataView(buffer);
+        view.setUint8(0, opCode);
+        return view.buffer;
+    }
+</script>
+</html>

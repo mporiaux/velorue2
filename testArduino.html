@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>test arduino</title>
+</head>
+<body>
+<button id="bt1">go</button>
+</body>
+
+<script>
+
+  var myService = null;
+  var speedCaracteric;
+  var slopeCaracteristic;
+  var vitesse= document.getElementById("vitesse");
+
+  var bt1 = document.getElementById("bt1");
+
+  bt1.addEventListener('pointerup', function(event) {
+    connect();
+  });
+
+
+  async function connect(){
+    if(myService === null) {
+      // Vérifier la compatibilité avec le Bluetooth
+      if ('bluetooth' in navigator) {
+        navigator.bluetooth.requestDevice({filters: [{services: ['0000ffe0-0000-1000-8000-00805f9b34fb']}]})
+                .then(device => {
+                  // Connexion à l'appareil Bluetooth sélectionné
+                  return device.gatt.connect();
+                })
+                .then(server => {
+                  myService = server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+                  // Récupération du service GATT
+
+                  return myService;
+                })
+                .then(service => {
+                  // Activation des notifications pour la caractéristique souhaitée
+                  return service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+                })
+                .then(characteristic => {
+                  // Activation des notifications
+                  alert("récupération de la caractéristique vitesse et activation des notifications");
+                  return characteristic.startNotifications();
+                })
+                .then(characteristic => {
+                  // Écoute des changements de valeur de la caractéristique
+
+                  characteristic.addEventListener('characteristicvaluechanged', event => {
+                    // Lecture de la valeur mise à jour
+                    let value = event.target.value;
+                    // Faites quelque chose avec la valeur...
+                    console.log('Nouvelle valeur :', value);
+                    let dv = new DataView(value.buffer);
+                    const etat = dv.getUint8(0, true);
+                    console.log("état ="+etat);
+                  });
+                })
+                .catch(error => {
+                  console.error('Erreur :', error);
+                });
+      } else {
+        console.log('Le Bluetooth n\'est pas supporté par ce navigateur.');
+      }
+    }
+    else return myService;
+  }
+
+
+</script>
+
+</html>

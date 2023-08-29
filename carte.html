@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body onload="initMap()">
+<div id="map"></div>
+</body>
+<script>
+  // Initialize and add the map
+  function initMap() {
+    // The location of Uluru
+    var uluru = {lat: -25.344, lng: 131.036};
+    // The map, centered at Uluru
+
+    var map = new google.maps.Map(
+            document.getElementById('map'), {zoom: 4, center: uluru});
+    // The marker, positioned at Uluru
+    var marker = new google.maps.Marker({position: uluru, map: map});
+
+    // Add click event listener on the map
+    google.maps.event.addListener(map, 'click', function(event) {
+      // Get the coordinates of the click event
+      var lat = event.latLng.lat();
+      var lng = event.latLng.lng();
+      console.log("Latitude: " + lat + "  Longitude: " + lng);
+    });
+  }
+</script>
+<script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDPLZsTh4cya1n_CshNgzsH4OmKDLWK8xQ&callback=initMap">
+</script>
+
+
+</html>

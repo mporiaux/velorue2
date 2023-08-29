@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="utf-8"></meta>
+        <title>Street View</title>
+
+        <link rel="shortcut icon" href="#" />
+        <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+    </head>
+    <body>
+
+        <iframe id="geocodeframe" height="400px" width="100%" frameBorder="0" scrolling="no" 
+                src="https://developers.google.com/maps/documentation/utils/geocoder/embed">
+        </iframe>
+
+
+        <form action="/bikerest/upload" method="post" enctype="multipart/form-data">
+
+            <input type="file" name="files"> 
+            <input type="submit" value="upload KML"></input>
+        </form>
+
+        <form action="/bikerest/upload2" method="post" enctype="multipart/form-data">
+
+            <input type="file" name="files"> 
+            <input type="submit" value="upload KML"></input>
+        </form>
+
+        <form action="/free" method="post">
+
+            coordonnées  <input type="text" name="coord"> 
+            <input type="submit" value="run"></input>
+        </form>
+
+        <form action="/free2" method="post">
+
+            coordonnées  <input type="text" name="coord"> 
+            <input type="submit" value="run"></input>
+        </form>
+        
+       <form action="/free3" method="post">
+            coordonnées  <input type="text" name="coord"> 
+            <input type="submit" value="run"></input>
+        </form>
+    </body>
+</html>

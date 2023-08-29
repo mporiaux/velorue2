@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+ INFOS : <input type="file" id="fileInput">
+ <p id="fileContent"></p>
+
+
+</body>
+<script>
+    var fileInput = document.getElementById("fileInput");
+    var fileContent = document.getElementById("fileContent");
+
+    fileInput.addEventListener("change", function() {
+        var file = fileInput.files[0];
+        var reader = new FileReader();
+
+        reader.onload = function() {
+
+                fileContent.textContent = reader.result;
+
+        };
+
+     reader.readAsText(file);
+
+    });
+</script>
+</html>
