@@ -54,7 +54,8 @@
 </div>
 <button onclick="go()" id="gobt">GO</button><br>
 nom du point: <input type ="text"  id="nomreset"><button onclick="reset()">RESET</button><br>
-nom du point: <input type ="text"  id="nomsave"><button onclick="save()">SAVE</button>
+nom du point: <input type ="text"  id="nomsave"><button onclick="save()">SAVE</button><br>
+fichier kml : <input type='file' accept=".kml,.kmz" id = "fileInput">
 <div id="street-view"></div>
 <div id="draggable-infos" class="ui-widget-content"></div>
 <div id="draggable-map" class="circleBase type1 ui-widget-content"></div>
@@ -118,7 +119,7 @@ nom du point: <input type ="text"  id="nomsave"><button onclick="save()">SAVE</b
   var filedata;
   var fileInput = document.getElementById("fileInput");
   var kmlfile;
-
+  var kml=false;
 
   btgotacx.addEventListener('pointerup', function(event) {
     connect();
@@ -143,6 +144,91 @@ nom du point: <input type ="text"  id="nomsave"><button onclick="save()">SAVE</b
   btstop.addEventListener('pointerup', function(event) {
     direction=0;
   });
+
+  function previewFile() {
+
+    const [file] = document.querySelector("input[type=file]").files;
+    const reader = new FileReader();
+
+    reader.addEventListener(
+      "load",
+      () => {
+
+        this.extractGoogleCoords(reader.result)
+
+      },
+      false
+    );
+
+    if (file) {
+      reader.readAsText(file);
+      this.kmlfile=file;
+      uploadFile();
+
+    ctaLayer = new google.maps.KmlLayer({
+      map: map,
+      url: "https://moodle.lestrade.be/velorue/"+this.kmlfile.name
+    })
+    kml=true;
+    }
+  }
+
+  fileInput.addEventListener("change", function() {
+    previewFile();
+  });
+
+  function uploadFile() {
+
+    var formData = new FormData();
+    formData.append("file", this.kmlfile);
+    var xhttp = new XMLHttpRequest();
+
+    // Set POST method and ajax file path
+    xhttp.open("POST", "upload.php", true);
+
+    // call on request changes state
+    xhttp.onreadystatechange = function () {
+      if (this.readyState == 4 && this.status == 200) {
+
+        var response = this.responseText;
+        if (response == 1) {
+          alert("upload réussi");
+        } else {
+          alert("échec de l'upload");
+        }
+      }
+    };
+
+    // Send request with data
+    xhttp.send(formData);
+  }
+  async function extractGoogleCoords(plainText) {
+
+    let parser = new DOMParser()
+    let xmlDoc = parser.parseFromString(plainText, "text/xml")
+
+    if (xmlDoc.documentElement.nodeName == "kml") {
+
+      for (const item of xmlDoc.getElementsByTagName('Placemark')) {
+
+        let markers = item.getElementsByTagName('Point')
+
+        /** MARKER PARSE **/
+        for (const marker of markers) {
+
+          var coords = marker.getElementsByTagName('coordinates')[0].childNodes[0].nodeValue.trim()
+
+          let coord = coords.split(",")
+          document.getElementById("lat").setAttribute("value",coord[1])
+          document.getElementById("long").setAttribute("value",coord[0])
+          return;
+        }
+      }
+    } else {
+      throw "error while parsing"
+    }
+  }
+
 
   function rotation() {
 
@@ -193,18 +279,14 @@ nom du point: <input type ="text"  id="nomsave"><button onclick="save()">SAVE</b
     lat = parseFloat(document.getElementById("lat").value);
     long= parseFloat(document.getElementById("long").value);
     pegman_position = {lat: lat, lng: long};
-    map = new google.maps.Map(document.getElementById('draggable-map'), {
-      center: pegman_position,
-      zoom: 15});
 
-    ctaLayer = new google.maps.KmlLayer(null);
-    ctaLayer.setMap(null);
-//le code suivant est à réactiver en déclarant src et le mettant en relation avec un fichier kml
-    /*   ctaLayer = new google.maps.KmlLayer(src, {
-           suppressInfoWindows: true,
-           preserveViewport: false,
-           map: map
-       });*/
+if(kml===false) {
+  map = new google.maps.Map(document.getElementById('draggable-map'), {
+    center: pegman_position,
+    zoom: 15});
+  ctaLayer = new google.maps.KmlLayer(null);
+  ctaLayer.setMap(null);
+}
 
     pano = new google.maps.StreetViewPanorama(
       document.getElementById('street-view'),
