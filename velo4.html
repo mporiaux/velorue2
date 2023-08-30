@@ -53,8 +53,7 @@
   Latitude = <input type="text" id="lat" value="<?= $lat ?>"> Longitude = <input type = "text" id="long" value="<?= $long ?>"><br>
 </div>
 <button onclick="go()" id="gobt">GO</button><br>
-nom du point: <input type ="text"  id="nomreset"><button onclick="reset()">RESET</button><br>
-nom du point: <input type ="text"  id="nomsave"><button onclick="save()">SAVE</button><br>
+nom du point: <input type ="text"  id="nomsave"><button onclick="save()">SAVE</button><button onclick="reset()">RESET</button><br>
 fichier kml : <input type='file' accept=".kml,.kmz" id = "fileInput">
 <div id="street-view"></div>
 <div id="draggable-infos" class="ui-widget-content"></div>
@@ -97,7 +96,6 @@ fichier kml : <input type='file' accept=".kml,.kmz" id = "fileInput">
   var pegman_position;
   var ctaLayer;
   var map;
-  var nomreset = document.getElementById("nomreset");
   var nomsave = document.getElementById("nomsave");
   var filedata;
   var btgo = document.getElementById("gobt");
@@ -442,30 +440,44 @@ if(kml===false) {
     return "";
   }
 
-  /*
-      function getCookie(name) {
-          var value = "; " + document.cookie;
-          var parts = value.split("; " + name + "=");
-          if (parts.length === 2)  return parts.pop().split(";").shift();
-          else  return "";
-      }
-     */
+  function listCookies() {
+    var theCookies = document.cookie.split(';');
+    var aString = '';
+    for (var i = 1 ; i <= theCookies.length; i++) {
+      aString += i + ' ' + theCookies[i-1] + "\n";
+    }
+    let ck = prompt("choisissez un numéro de lieu\n"+aString,"");
+
+    return theCookies[ck-1];
+  }
+
+  function getCookie(name) {
+    var value = "; " + document.cookie;
+    var parts = value.split("; " + name + "=");
+    if (parts.length === 2)
+      return parts.pop().split(";").shift();
+    else
+      return "";
+  }
 
   function reset() {
-    lat = getCookie(nomreset.value+"latitude");
-    if (isNaN(lat))  lat = 0;
-    long = getCookie(nomreset.value+"longitude");
-    if (isNaN(long)) long = 0;
+    let ck= listCookies();
+    ck = ck.split("=")[1];
+    let coord= ck.split(":");
+    lat=coord[0];
+    if (isNaN(lat))lat = 0;
+    long = coord[1];
+    if (isNaN(long))long = 0;
     document.getElementById("lat").value=lat;
     document.getElementById("long").value=long;
   }
 
+
   function save() {
-    var nomold=getCookie(nomsave.value+"latitude");
+    var nomold=getCookie(nomsave.value+"_coord");
     if(nomold===""){
-      document.cookie = nomsave.value+"latitude=" + lat + "; Max-Age=2592000";
-      document.cookie = nomsave.value+"longitude=" + long + "; Max-Age=2592000";
-      alert("sauvegarde de :"+document.cookie);
+      document.cookie = nomsave.value+"_coord=" + lat + ":"+long+"; Max-Age=2592000";
+       alert("sauvegarde de :"+document.cookie);
     }
     else alert("nom déjà utilisé");
   }
