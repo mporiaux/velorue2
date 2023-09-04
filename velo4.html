@@ -16,8 +16,8 @@
       height: 100%;
     }
 
-    #draggable-map { width: 350px; height: 350px; }
-    #draggable-infos{ width: 18%; height: 15%; }
+    #draggable-map { width: 250px; height: 250px; }
+    #draggable-infos{ width: 18%; height: 20%; }
     #draggable-elevation { width: 7%; height: 10%; }
 
     .circleBase {
@@ -129,6 +129,7 @@ fichier kml : <input type='file' accept=".kml,.kmz" id = "fileInput">
 
   btsimulvit.addEventListener('pointerup', function(event) {
     vit=15;
+    simul=true;
   });
 
   btgauche.addEventListener('pointerup', function(event) {
@@ -260,7 +261,7 @@ fichier kml : <input type='file' accept=".kml,.kmz" id = "fileInput">
         case 3 : vreelle = parseFloat(vreelle) - 5;
           if (vreelle < parseFloat(vit)) vreelle = parseFloat(vit);
       }
-      await timer(300);
+      await timer(150);
     } while (true);
   }
 
@@ -413,7 +414,7 @@ if(kml===false) {
             else
               el.style.backgroundColor = "RED";
             adur = dur;
-            if(simul!==false)  setPente();
+           if(simul===false) setPente();
 
         } else {
           console.log('No results found');
