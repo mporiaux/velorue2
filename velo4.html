@@ -16,7 +16,7 @@
       height: 100%;
     }
 
-    #draggable-map { width: 250px; height: 250px; }
+    #draggable-map { width: 350px; height: 350px; }
     #draggable-infos{ width: 18%; height: 20%; }
     #draggable-elevation { width: 7%; height: 10%; }
 
@@ -169,7 +169,15 @@ fichier kml : <input type='file' accept=".kml,.kmz" id = "fileInput">
       url: "https://moodle.lestrade.be/velorue/"+this.kmlfile.name
     })
     kml=true;
+    alert("affichage du track : "+this.kmlfile.name);
     }
+  }
+
+  function affTrack(){
+    ctaLayer = new google.maps.KmlLayer({
+      map: map,
+      url: "https://moodle.lestrade.be/velorue/"+this.kmlfile.name
+    })
   }
 
   fileInput.addEventListener("change", function() {
@@ -192,6 +200,7 @@ fichier kml : <input type='file' accept=".kml,.kmz" id = "fileInput">
         var response = this.responseText;
         if (response == 1) {
           alert("upload réussi");
+
         } else {
           alert("échec de l'upload");
         }
@@ -210,7 +219,8 @@ fichier kml : <input type='file' accept=".kml,.kmz" id = "fileInput">
 
       for (const item of xmlDoc.getElementsByTagName('Placemark')) {
 
-        let markers = item.getElementsByTagName('Point')
+        // markers = item.getElementsByTagName('Point')
+        let markers = item.getElementsByTagName('LineString')
 
         /** MARKER PARSE **/
         for (const marker of markers) {
@@ -279,19 +289,21 @@ fichier kml : <input type='file' accept=".kml,.kmz" id = "fileInput">
     long= parseFloat(document.getElementById("long").value);
     pegman_position = {lat: lat, lng: long};
 
-if(kml===false) {
+
   map = new google.maps.Map(document.getElementById('draggable-map'), {
     center: pegman_position,
     zoom: 15});
-  ctaLayer = new google.maps.KmlLayer(null);
-  ctaLayer.setMap(null);
-}
+  if(kml===false) {
+      ctaLayer = new google.maps.KmlLayer(null);
+      ctaLayer.setMap(null);
+    }
+
 
     pano = new google.maps.StreetViewPanorama(
       document.getElementById('street-view'),
       {
         position: pegman_position,
-        pov: {heading: rot, pitch: 0},
+        pov: {heading: rot, pitch: dur*0},
         zoom: 1
       });
     pano.addListener('links_changed', function () {
@@ -300,6 +312,22 @@ if(kml===false) {
 
     });
     map.setStreetView(pano);
+// Ajout d'un marqueur à la vue Street View
+    var marker = new google.maps.Marker({
+      position: pegman_position,
+      map: panorama // 'panorama' est l'objet Street View
+    });
+
+// Ajout d'une infobulle au marqueur
+    var infowindow = new google.maps.InfoWindow({
+      content: 'Ceci est un endroit spécial.'
+    });
+
+    marker.addListener('click', function() {
+      infowindow.open(panorama);
+    });
+
+
   }
 
   function rotate() {
@@ -488,9 +516,9 @@ if(kml===false) {
     lat = parseFloat(document.getElementById("lat").value);
     long = parseFloat(document.getElementById("long").value);
 
-    initialize();
+   initialize();
     //debut positionnement
-
+   if(kml===true)   affTrack();
     inf.style.position = "absolute";
     inf.style.left = '800px';
     inf.style.top = '500px';
@@ -506,7 +534,7 @@ if(kml===false) {
 
     carte.style.position = "absolute";
     carte.style.left = '1000px';
-    carte.style.top = '800px';
+    carte.style.top = '600px';
     carte.style.zIndex = "10";
     let ncolor=0;
     const  colors=["blue","green"];
