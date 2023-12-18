@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Boîte de Dialogue Éphémère</title>
+  <style>
+    /* Style pour la boîte de dialogue */
+    .alert {
+      display: none;
+      padding: 15px;
+      border: 1px solid #d4d4d4;
+      border-radius: 5px;
+      background-color: #f3f3f3;
+      position: fixed;
+      bottom: 15px;
+      right: 15px;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Boîte de dialogue -->
+<div id="boiteDialogue" class="alert"></div>
+
+<script>
+  // Affiche la boîte de dialogue avec un message pendant 3 secondes
+  function afficherBoiteDialogue(message) {
+    var boiteDialogue = document.getElementById("boiteDialogue");
+    boiteDialogue.innerHTML = message;
+    boiteDialogue.style.display = "block";
+
+    setTimeout(function() {
+      // Ferme la boîte de dialogue après 3 secondes
+      boiteDialogue.style.display = "none";
+    }, 3000);
+  }
+
+  // Appel de la fonction avec un exemple de message
+  afficherBoiteDialogue("Ceci est une boîte de dialogue éphémère !");
+</script>
+
+</body>
+</html>

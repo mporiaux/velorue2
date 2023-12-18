@@ -5,14 +5,29 @@ To change this template file, choose Tools | Templates
 and open the template in the editor.
 -->
 <html xmlns:th="http://www.thymeleaf.org">
-   
+
         <title>ERREUR</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
     </head>
     <body>
+        <div class="demo">hello</div>
         <div>ERREUR : <span th:text="${msg}"></span></div>
-        
+
         <a href="/"> retour accueil</a>
     </body>
+<script>
+  // Affiche une boîte de dialogue avec un message pendant 3 secondes
+  function afficherBoiteDialogue(message) {
+
+    setTimeout(function() {
+      // Ferme la boîte de dialogue après 3 secondes
+      document.querySelector('.demo').remove();
+    }, 3000);
+  }
+
+  // Appel de la fonction avec un exemple de message
+  afficherBoiteDialogue("Ceci est une boîte de dialogue éphémère !");
+
+</script>
 </html>

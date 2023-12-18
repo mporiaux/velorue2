@@ -1,3 +1,9 @@
+
+
+var vitesseCharacteristic;
+var slopeCharacteristic;
+var myService = null;
+
 const definitions = {
   windSpeed:      {resolution: 0.001,  unit: 'mps',  size: 2, min: -35.56, max: 35.56,  default: 2}, // 0,
   grade:          {resolution: 0.01,   unit: '%',    size: 2, min: -40,    max: 40,     default: 0},
@@ -118,7 +124,7 @@ function encode(grade) {
   return view.buffer;
 }
 
-async function setPente() {
+ async function setPente() {
   let slopeValue = dur;
   let data = encode(Math.floor(slopeValue*100));
   var view1 = new DataView(data);

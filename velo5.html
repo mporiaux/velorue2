@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"></meta>
+  <title>Street View</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    #street-view {
+      height: 100%;
+    }
+    #map {
+      height: 100%;
+    }
+
+    #draggable-map { width: 350px; height: 350px; }
+    #draggable-infos{ width: 18%; height: 20%; }
+    #draggable-elevation { width: 7%; height: 10%; }
+
+    .circleBase {
+      border-radius: 50%;
+    }
+    .type1 {
+      width: 350px;
+      height: 350px;
+      border: 1px solid blue;
+    }
+  </style>
+
+  <link rel="shortcut icon" href="#" />
+  <!-- Latest compiled and minified CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <!-- jQuery library -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+
+  <!-- Latest compiled JavaScript -->
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+  <script>
+    $(function () {
+      $("#draggable-map").draggable();
+      $("#draggable-infos").draggable();
+      $("#draggable-elevation").draggable();
+    });
+  </script>
+  <script src="./tacx.js" defer></script>
+  <script src="./arduino.js" defer></script>
+  <script src="./fichiers.js" defer></script>
+  <script src="./carte.js" defer></script>
+  <script src="./calculs.js" defer></script>
+  <script src="./parcours.js" defer></script>
+  <script src="./cookies.js" defer></script>
+</head>
+<body>
+<div>
+<button id="gotacx" class="btn btn-primary">CONNECT TACX</button><button id="godir" class="btn btn-success">CONNECT ARDUINO</button>
+</div>
+<div>
+  <button id="simulvit">simulation vitesse</button>
+  <button id = "gauche" class="button button-grey">gauche</button>
+  <button id="droite" class="button button-grey">droite</button>
+</div>
+<div>
+  Latitude = <input type="text" id="lat" value="<?= $lat ?>"> Longitude = <input type = "text" id="long" value="<?= $long ?>"><br>
+</div>
+<button onclick="go()" id="gobt">GO</button><br>
+nom du point: <input type ="text"  id="nomsave"><button onclick="save()">SAVE</button><button onclick="reset()">RESET</button><br>
+fichier kml : <input type='file' accept=".kml,.kmz" id = "fileInput">
+<div id="street-view"></div>
+<div id="draggable-infos" class="ui-widget-content"></div>
+<div id="draggable-map" class="circleBase type1 ui-widget-content"></div>
+<div id="draggable-elevation"></div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    lecture();
+  }, false);
+
+
+  var pano;
+  var long = 4.3983;
+  var lat = 44.40821;
+  var chgtok = false;
+  var pegman_position;
+  var ctaLayer;
+  var map;
+  var kml=false;
+  var coordBlank=[];
+  var vit = 0.0;
+  var dur=0;
+  var direction=0;
+  var gaucheSimul=false;
+  var droiteSimul=false;
+  var simul=false;
+
+
+  var inf = document.getElementById('draggable-infos');
+  var el = document.getElementById('draggable-elevation');
+  var carte = document.getElementById('draggable-map');
+  var nomsave = document.getElementById("nomsave");
+  var btgo = document.getElementById("gobt");
+  var vitesse= document.getElementById("vitesse");
+  var btgotacx = document.getElementById("gotacx");
+  var btgodir = document.getElementById("godir");
+  var btsimulvit= document.getElementById("simulvit");
+  var btgauche= document.getElementById("gauche");
+  var btdroite= document.getElementById("droite");
+  var fileInput = document.getElementById("fileInput");
+  btdroite.style.background = "grey";
+  btgauche.style.background = "grey";
+  btsimulvit.style.background="grey";
+
+  btgotacx.addEventListener('pointerup', function(event) {
+    connect();
+  });
+
+  btgodir.addEventListener('pointerup', function(event) {
+    connectDir();
+  });
+
+  btsimulvit.addEventListener('pointerup', function(event) {
+    vit=15;
+    simul=true;
+    btsimulvit.style.background = "green";
+  });
+
+  btgauche.addEventListener('pointerup', function(event) {
+    if(gaucheSimul===false){
+      direction+=1;
+      gaucheSimul=true;
+      btgauche.style.background = "green";
+    }
+    else {
+      direction-=1;
+      gaucheSimul=false;
+      btgauche.style.background = "grey";
+    }
+  });
+
+  btdroite.addEventListener('pointerup', function(event) {
+    if(droiteSimul===false){
+      direction+=2;
+      droiteSimul=true;
+      btdroite.style.background = "green";
+    }
+    else {
+      direction-=2;
+      droiteSimul=false;
+      btdroite.style.background = "grey";
+    }
+  });
+
+
+
+</script>
+<script async defer
+          src="https://maps.googleapis.com/maps/api/js?key=<?= $key ?>&callback=initialize">
+</script>
+</body>
+</html>
