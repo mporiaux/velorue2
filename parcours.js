@@ -16,6 +16,7 @@ var moydur=0;
 var nbrMesuresPente=5;
 var rot = 0;
 var vreelle = 0.0;
+var d= 0;
 
 function rotation() {
 

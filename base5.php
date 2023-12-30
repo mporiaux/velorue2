@@ -177,7 +177,7 @@ if (core_userfeedback::should_display_reminder()) {
 
 <script>
     function initMap() {
-        var uluru = {lat: 50, lng: 0};
+        var uluru = {lat: 45, lng: 5};
         var latlong = document.getElementById("latlong");
         var map = new google.maps.Map(document.getElementById("map"), {
             center: uluru,
@@ -204,6 +204,9 @@ if (core_userfeedback::should_display_reminder()) {
     }
 </script>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDPLZsTh4cya1n_CshNgzsH4OmKDLWK8xQ&callback=initMap"></script>
+<iframe id="geocodeframe" height="400px" width="100%" frameBorder="0" scrolling="no"
+        src="https://developers.google.com/maps/documentation/utils/geocoder/embed">
+</iframe>
 </html>
 
 

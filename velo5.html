@@ -68,9 +68,10 @@
 <div>
   Latitude = <input type="text" id="lat" value="<?= $lat ?>"> Longitude = <input type = "text" id="long" value="<?= $long ?>"><br>
 </div>
-<button onclick="go()" id="gobt">GO</button><br>
+<button onclick="go()" id="gobt">GO</button><button onclick="chgtCarte()" id="chgtcrt">Changer de position</button><br>
 nom du point: <input type ="text"  id="nomsave"><button onclick="save()">SAVE</button><button onclick="reset()">RESET</button><br>
 fichier kml : <input type='file' accept=".kml,.kmz" id = "fileInput">
+
 <div id="street-view"></div>
 <div id="draggable-infos" class="ui-widget-content"></div>
 <div id="draggable-map" class="circleBase type1 ui-widget-content"></div>
@@ -97,6 +98,7 @@ fichier kml : <input type='file' accept=".kml,.kmz" id = "fileInput">
   var gaucheSimul=false;
   var droiteSimul=false;
   var simul=false;
+  var chgtcrtok=false;
 
 
   var inf = document.getElementById('draggable-infos');
@@ -111,6 +113,7 @@ fichier kml : <input type='file' accept=".kml,.kmz" id = "fileInput">
   var btgauche= document.getElementById("gauche");
   var btdroite= document.getElementById("droite");
   var fileInput = document.getElementById("fileInput");
+  var btchgtcarte= document.getElementById("chgtcrt")
   btdroite.style.background = "grey";
   btgauche.style.background = "grey";
   btsimulvit.style.background="grey";
@@ -124,10 +127,18 @@ fichier kml : <input type='file' accept=".kml,.kmz" id = "fileInput">
   });
 
   btsimulvit.addEventListener('pointerup', function(event) {
-    vit=15;
-    simul=true;
+    if (simul === false) {
+    vit = 15;
+    simul = true;
     btsimulvit.style.background = "green";
-  });
+   }
+    else {
+      vit = 0;
+      simul = false;
+      btsimulvit.style.background = "grey";
+     }
+    }
+    );
 
   btgauche.addEventListener('pointerup', function(event) {
     if(gaucheSimul===false){
@@ -155,7 +166,17 @@ fichier kml : <input type='file' accept=".kml,.kmz" id = "fileInput">
     }
   });
 
-
+  btchgtcarte.addEventListener('pointerup', function(event) {
+    if(chgtcrtok===false){
+      document.getElementById('draggable-map').className = 'ui-widget-content';
+      chgtcrtok=true;
+    }
+    else {
+      document.getElementById('draggable-map').className = 'circleBase type1 ui-widget-content';
+      chgtcrtok=false;
+      btdroite.style.background = "grey";
+    }
+  });
 
 </script>
 <script async defer
