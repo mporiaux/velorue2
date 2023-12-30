@@ -38,7 +38,8 @@ function timer(ms) {
 
 async  function lecture() {
   do {
-      dist += vit/3.6;
+   lectureInfos();
+     dist += vit/3.6;
     if(vreelle<vit) vreelle=vit;
     else avancer();
 

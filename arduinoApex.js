@@ -35,6 +35,7 @@ async function connectDir(){
             const etat = dv.getUint8(0, true);
             console.log("état ="+etat);
             direction=etat-48;
+            setDirection();
           });
         })
         .catch(error => {

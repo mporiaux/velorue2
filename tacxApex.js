@@ -85,6 +85,7 @@ async function connect() {
         characteristic.addEventListener('characteristicvaluechanged', event => {
           let value = event.target.value;
           vit = readSpeed(new DataView(value.buffer));
+          setVitesse();
         });
         return myService;
       })

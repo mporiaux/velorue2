@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+  <script src="./tacxApex.js" defer></script>
+  <script src="./arduinoApex.js" defer></script>
+</head>
+<body>
+<div>
+  <button id="gotacx" class="btn btn-primary">CONNECT TACX</button><button id="godir" class="btn btn-success">CONNECT ARDUINO</button>
+</div>
+
+<!-- Script jQuery -->
+<script>
+  var btgotacx = document.getElementById("gotacx");
+  var btgodir = document.getElementById("godir");
+
+  // Attend que le document soit chargé
+  $(document).ready(function(){
+    lectureInfos();
+  });
+
+
+  btgotacx.addEventListener('pointerup', function(event) {
+    connect();
+  });
+
+  btgodir.addEventListener('pointerup', function(event) {
+    connectDir();
+  });
+
+  function timer(ms) {
+    return new Promise(res => setTimeout(res, ms));
+  }
+  async  function lectureInfos() {
+    do {
+      $.ajax({
+        type: "GET",
+        contentType: "application/json",
+        url: "https://apex.oracle.com/pls/apex/wksp_demoporiaux1/velo/infos/",
+        dataType: 'json',
+        timeout: 100000
+      }).done(function (data) {
+        dur = data.durete;
+        setPente();
+        console.log("SUCCESS: ", data.durete);
+      }).fail(function (jqXHR, textStatus, errorThrown) {
+          console.log("erreur de réception " + jqXHR.responseText + " " + errorThrown);
+        }
+      );
+      await timer(300);
+    } while (true);
+  }
+  async function setVitesse() {
+    $.ajax({
+      type: "PUT",
+      contentType: "application/json",
+      url: "https://apex.oracle.com/pls/apex/wksp_demoporiaux1/velo/vitesse/",
+      data: JSON.stringify({ "vitesse": vit}),
+      timeout: 100000}).
+    done(function (data) {
+      console.log("SUCCESS: ", "ok");
+    }).
+    fail(function(jqXHR, textStatus, errorThrown) {
+        console.log("erreur de réception "+jqXHR.responseText+" "+errorThrown);
+      }
+    );
+  }
+
+  async function setDirection() {
+    $.ajax({
+      type: "PUT",
+      contentType: "application/json",
+      url: "https://apex.oracle.com/pls/apex/wksp_demoporiaux1/velo/vitesse/",
+      data: JSON.stringify({ "direction": direction}),
+      timeout: 100000}).
+    done(function (data) {
+      console.log("SUCCESS: ", "ok");
+    }).
+    fail(function(jqXHR, textStatus, errorThrown) {
+        console.log("erreur de réception "+jqXHR.responseText+" "+errorThrown);
+      }
+    );
+  }
+
+</script>
+
+</body>
+</html>
